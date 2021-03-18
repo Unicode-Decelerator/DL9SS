@@ -1,13 +1,4 @@
-# PingOS
-
-[![logo](doc/img/logo-banner-white-400x200.png)](https://pingos.io)
-
-[![website](https://img.shields.io/badge/website-https://pingos.io-red.svg)](https://pingos.io) [![Build Status](https://travis-ci.com/pingostack/pingos.svg?branch=master)](https://travis-ci.com/pingostack/pingos) [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
-
-
-> [PingOS](https://pingos.io/docs/zh/quick-start)依赖[NGINX](https://github.com/nginx/nginx)构建，并且继承[arut](https://github.com/arut/nginx-rtmp-module)和[AlexWoo](https://github.com/AlexWoo/nginx-rtmp-module)的nginx-rtmp-module模块。修复arut和AlexWoo版本存在的部分问题外，PingOS在编码和直播协议以及其他方面做了多项功能扩展。
-
----
+**专为大连九中打造的直播系统**
 
 # 服务器功能
 
@@ -25,20 +16,14 @@
 - [x] **集群化功能：** 服务器间推拉流功能（http-flv、rtmp协议）。
 - [x] **html5网页播放器：** [pingos-player](https://github.com/pingostack/pingos-player)播放器将持续兼容各浏览器平台，以及多种直播协议。
 
-# 引导
-
-- [项目文档](https://pingos.io/docs/zh/quick-start)
-
-## 快速安装
-
-- [使用Docker镜像](docker/README.md)
+## 部署方法
 
 - 直接安装到系统
     ```bash
     # 快速安装
-    git clone https://github.com/pingostack/pingos.git
+    git clone https://github.com/Unicode-Decelerator/DL_No.9_Junior_Middle_School_Live_Streaming_Solution.git
 
-    cd pingos
+    cd DL_No.9_Junior_Middle_School_Live_Streaming_Solution
 
     ./release.sh -i
 
@@ -77,5 +62,4 @@
 > 这个播放器是基于flv.js的网页播放器，可以实现无插件播放http-flv直播流。
 > 一旦你能够访问这个页面，说明你的直播服务器已经成功搭建起来了。
 
-![h5player](doc/img/flvplayer.png)
-<div class="article__content" markdown="1">
+**本项目关键代码来自PingOS，感谢开源项目PingOS对我们学校提供的支持**
