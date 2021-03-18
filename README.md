@@ -21,9 +21,9 @@
 - 直接安装到系统
     ```bash
     # 快速安装
-    git clone https://github.com/Unicode-Decelerator/DL_No.9_Junior_Middle_School_Live_Streaming_Solution.git
+    git clone https://github.com/Unicode-Decelerator/DL9SS.git
 
-    cd DL_No.9_Junior_Middle_School_Live_Streaming_Solution
+    cd DL9SS
 
     ./release.sh -i
 
