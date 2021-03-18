@@ -254,6 +254,9 @@ then
         then
             cp ./resource/crossdomain.xml $WWW_ROOT"/crossdomain.xml"
         fi
+        
+        mv $WWW_ROOT"/index.html" $WWW_ROOT"/index.html.oldbak"
+        cp ./resource/index.html $WWW_ROOT"/index.html"
 
         if [ ! -d $WWW_ROOT"/h5player" ]
         then
