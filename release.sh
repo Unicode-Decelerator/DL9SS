@@ -257,6 +257,7 @@ then
         
         mv $WWW_ROOT"/index.html" $WWW_ROOT"/index.html.oldbak"
         cp ./resource/index.html $WWW_ROOT"/index.html"
+        cp -r ./resource/Assets $WWW_ROOT"/Assets"
 
         if [ ! -d $WWW_ROOT"/h5player" ]
         then
