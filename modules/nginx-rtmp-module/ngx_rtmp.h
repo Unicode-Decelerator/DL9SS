@@ -176,6 +176,7 @@ typedef struct {
     uint32_t                dtime;
     uint32_t                len;        /* current fragment length */
     uint8_t                 ext;
+    uint32_t                last_extimestamp;
     ngx_chain_t            *in;
 } ngx_rtmp_stream_t;
 
@@ -223,6 +224,8 @@ struct ngx_mpegts_frame_s {
 #define NGX_HTTP_FLV_LIVE   1
 #define NGX_HLS_LIVE        2
 #define NGX_MPEGTS_LIVE     3
+
+extern char *ngx_live_protocol_string[4];
 
 typedef struct ngx_rtmp_session_s  ngx_rtmp_session_t;
 

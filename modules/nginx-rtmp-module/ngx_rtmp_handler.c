@@ -204,7 +204,7 @@ ngx_rtmp_recv(ngx_event_t *rev)
     u_char                     *p, *pp, *old_pos;
     size_t                      size, fsize, old_size;
     uint8_t                     fmt, ext;
-    uint32_t                    csid, timestamp;
+    uint32_t                    csid, timestamp, extimestamp = 0;
 
     c = rev->data;
     s = c->data;
@@ -243,7 +243,7 @@ ngx_rtmp_recv(ngx_event_t *rev)
 
         if (old_size) {
 
-            ngx_log_debug1(NGX_LOG_DEBUG_RTMP, s->log, 0,
+            ngx_log_error(NGX_LOG_DEBUG, s->log, 0,
                     "reusing formerly read data: %d", old_size);
 
             b->pos = b->start;
@@ -277,11 +277,14 @@ ngx_rtmp_recv(ngx_event_t *rev)
 
             s->ping_reset = 1;
             ngx_rtmp_update_bandwidth(&ngx_rtmp_bw_in, n);
+            if (s->live_stream) {
+                ngx_rtmp_update_bandwidth(&s->live_stream->bw_in, n);
+            }
             b->last += n;
             s->in_bytes += n;
 
             if (s->in_bytes >= 0xf0000000) {
-                ngx_log_debug0(NGX_LOG_DEBUG_RTMP, s->log, 0,
+                ngx_log_error(NGX_LOG_DEBUG, s->log, 0,
                                "resetting byte counter");
                 s->in_bytes = 0;
                 s->in_last_ack = 0;
@@ -291,7 +294,7 @@ ngx_rtmp_recv(ngx_event_t *rev)
 
                 s->in_last_ack = s->in_bytes;
 
-                ngx_log_debug1(NGX_LOG_DEBUG_RTMP, s->log, 0,
+                ngx_log_error(NGX_LOG_DEBUG, s->log, 0,
                         "sending RTMP ACK(%uD)", s->in_bytes);
 
                 if (ngx_rtmp_send_ack(s, s->in_bytes)) {
@@ -326,7 +329,7 @@ ngx_rtmp_recv(ngx_event_t *rev)
                 csid += (uint32_t)256 * (*(uint8_t*)p++);
             }
 
-            ngx_log_debug2(NGX_LOG_DEBUG_RTMP, s->log, 0,
+            ngx_log_error(NGX_LOG_DEBUG, s->log, 0,
                     "RTMP bheader fmt=%d csid=%D",
                     (int)fmt, csid);
 
@@ -402,14 +405,22 @@ ngx_rtmp_recv(ngx_event_t *rev)
             }
 
             /* extended header */
+            extimestamp = 0;
             if (ext) {
                 if (b->last - p < 4)
                     continue;
-                pp = (u_char*)&timestamp;
+                pp = (u_char*)&extimestamp;
                 pp[3] = *p++;
                 pp[2] = *p++;
                 pp[1] = *p++;
                 pp[0] = *p++;
+                if (extimestamp != st->last_extimestamp && fmt == 3) {
+                    p -= 4;
+                    ext = 0;
+                } else {
+                    st->last_extimestamp = extimestamp;
+                    timestamp = extimestamp;
+                }
             }
 
             if (st->len == 0) {
@@ -427,11 +438,14 @@ ngx_rtmp_recv(ngx_event_t *rev)
                 }
             }
 
-            ngx_log_debug8(NGX_LOG_DEBUG_RTMP, s->log, 0,
+#ifdef NGX_DEBUG
+             ngx_log_debug(NGX_LOG_DEBUG_RTMP, s->log, 0,
                     "RTMP mheader fmt=%d %s (%d) "
-                    "time=%uD+%uD mlen=%D len=%D msid=%D",
+                    "time=%uD+%uD mlen=%D len=%D msid=%D bsize=%D extime=%uD",
                     (int)fmt, ngx_rtmp_message_type(h->type), (int)h->type,
-                    h->timestamp, st->dtime, h->mlen, st->len, h->msid);
+                    h->timestamp, st->dtime, h->mlen, st->len, h->msid,
+                    b->last - b->pos, extimestamp);
+#endif
 
             /* header done */
             b->pos = p;
@@ -548,10 +562,12 @@ ngx_rtmp_prepare_out_chain(ngx_rtmp_session_t *s)
 
     hsize = hdrsize[fmt];
 
+#ifdef NGX_DEBUG
     ngx_log_debug7(NGX_LOG_DEBUG_RTMP, s->log, 0,
             "RTMP prep %s (%d) fmt=%d csid=%uD timestamp=%uD mlen=%uD msid=%uD",
             ngx_rtmp_message_type(frame->hdr.type), (int)frame->hdr.type,
             (int)fmt, frame->hdr.csid, timestamp, mlen, frame->hdr.msid);
+#endif
 
     ext_timestamp = 0;
     if (timestamp >= 0x00ffffff) {
@@ -745,6 +761,9 @@ ngx_rtmp_send(ngx_event_t *wev)
         s->out_bytes += n;
         s->ping_reset = 1;
         ngx_rtmp_update_bandwidth(&ngx_rtmp_bw_out, n);
+        if (s->live_stream) {
+            ngx_rtmp_update_bandwidth(&s->live_stream->bw_out, n);
+        }
 
         if (ngx_rtmp_prepare_merge_frame(s) == NGX_ERROR) {
             ngx_rtmp_finalize_session(s);
@@ -944,5 +963,4 @@ ngx_rtmp_finalize_set_chunk_size(ngx_rtmp_session_t *s)
     }
     return NGX_OK;
 }
-
 

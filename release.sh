@@ -205,7 +205,13 @@ cd nginx
 
 if [ ! -f "Makefile" ]
 then
-    config="./configure"
+    if [ ! -f "configure" ]
+    then
+        config="./auto/configure"
+    else
+        config="./configure"
+    fi
+    
     for option in ${options[*]}
     do
         config=$config" "$option
@@ -262,7 +268,7 @@ then
         if [ ! -d $WWW_ROOT"/h5player" ]
         then
             cd $WWW_ROOT
-            git clone https://github.com/im-pingo/h5player.git
+            git clone https://github.com/pingostack/h5player.git
             cd $OPWD
         fi
     fi

@@ -11,6 +11,12 @@
 #include "ngx_rtmp.h"
 #include "ngx_rtmp_variables.h"
 
+char *ngx_live_protocol_string[4] = {
+    "rtmp",
+    "http-flv",
+    "hls+",
+    "http-ts"
+};
 
 static char *ngx_rtmp_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
 static ngx_int_t ngx_rtmp_optimize_servers(ngx_conf_t *cf,
@@ -310,6 +316,10 @@ ngx_rtmp_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
                 return NGX_CONF_ERROR;
             }
         }
+    }
+
+    if (ngx_rtmp_variables_init_vars(cf) != NGX_OK) {
+        return NGX_CONF_ERROR;
     }
 
     *cf = pcf;

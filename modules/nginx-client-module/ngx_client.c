@@ -608,7 +608,7 @@ ngx_client_write_handler(ngx_event_t *ev)
     c = ev->data;
     s = c->data;
 
-    if (c->destroyed) {
+    if (c->destroyed || s->closed) {
         return;
     }
 

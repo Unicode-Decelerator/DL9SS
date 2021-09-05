@@ -341,7 +341,11 @@ ngx_http_flv_live_write_handler(ngx_http_request_t *r)
 
         sent = r->connection->sent - present;
 
+        s->out_bytes += sent;
         ngx_rtmp_update_bandwidth(&ngx_rtmp_bw_out, sent);
+        if (s->live_stream) {
+            ngx_rtmp_update_bandwidth(&s->live_stream->bw_out, sent);
+        }
 
         if (rc == NGX_AGAIN) {
             ngx_add_timer(wev, s->timeout);
@@ -576,8 +580,8 @@ ngx_http_flv_live_handler(ngx_http_request_t *r)
     s->remote_addr_text.len = r->connection->addr_text.len;
     ngx_memcpy(s->remote_addr_text.data,
         r->connection->addr_text.data, r->connection->addr_text.len);
-    ngx_rtmp_set_combined_log(s, r->connection->log->data,
-            r->connection->log->handler);
+//    ngx_rtmp_set_combined_log(s, r->connection->log->data,
+//            r->connection->log->handler);
     s->log->connection = r->connection->number;
     ctx->session = s;
 
