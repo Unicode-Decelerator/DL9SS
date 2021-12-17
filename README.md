@@ -50,4 +50,3 @@
 
 - http(s)-ts 播放：http(s)://ip/ts/流名
 
-**本项目关键代码来自PingOS，感谢开源项目PingOS对我们学校提供的支持**
