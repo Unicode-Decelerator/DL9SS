@@ -9,6 +9,7 @@
 #include <ngx_http.h>
 #include "ngx_rtmp.h"
 #include "ngx_rtmp_cmd_module.h"
+#include "ngx_rtmp_codec_module.h"
 #include "ngx_rbuf.h"
 #include "ngx_http_set_header.h"
 #include "ngx_rtmp_monitor_module.h"
@@ -27,6 +28,10 @@ static u_char  ngx_flv_live_av_header[] = "FLV\x1\x5\0\0\0\x9\0\0\0\0";
 static ngx_keyval_t ngx_http_flv_live_headers[] = {
     { ngx_string("Cache-Control"),  ngx_string("no-cache") },
     { ngx_string("Content-Type"),   ngx_string("video/x-flv") },
+    { ngx_string("Access-Control-Allow-Origin"),      ngx_string("*") },
+    { ngx_string("Access-Control-Allow-Credentials"), ngx_string("*") },
+    { ngx_string("Access-Control-Expose-Headers"),    ngx_string("*") },
+    { ngx_string("Access-Control-Allow-Headers"), ngx_string("Content-Type,Access-Token") },
     { ngx_null_string, ngx_null_string }
 };
 
@@ -98,10 +103,27 @@ static ngx_int_t
 ngx_http_flv_live_send_header(ngx_http_request_t *r)
 {
     ngx_int_t                           rc;
-    ngx_keyval_t                       *h;
     ngx_buf_t                          *b;
     ngx_chain_t                         out;
     ngx_http_flv_live_loc_conf_t       *hflcf;
+    ngx_flag_t                          has_video;
+    ngx_flag_t                          has_audio;
+    ngx_http_flv_live_ctx_t            *ctx;
+    ngx_rtmp_session_t                 *s;
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_flv_live_module);
+    s = ctx->session;
+    if (s && s->live_stream->bw_in_audio.bytes) {
+        has_audio = 1;
+    } else {
+        has_audio = 0;
+    }
+
+    if (s && s->live_stream->bw_in_video.bytes) {
+        has_video = 1;
+    } else {
+        has_video = 0;
+    }
 
     if (r->header_sent) {
         return NGX_OK;
@@ -111,15 +133,6 @@ ngx_http_flv_live_send_header(ngx_http_request_t *r)
 
     r->headers_out.status = NGX_HTTP_OK;
     r->keepalive = 0; /* set Connection to closed */
-
-    h = ngx_http_flv_live_headers;
-    while (h->key.len) {
-        rc = ngx_http_set_header_out(r, &h->key, &h->value);
-        if (rc != NGX_OK) {
-            return rc;
-        }
-        ++h;
-    }
 
     rc = ngx_http_send_header(r);
     if (rc == NGX_ERROR || rc > NGX_OK) {
@@ -151,10 +164,34 @@ ngx_http_flv_live_send_header(ngx_http_request_t *r)
         break;
 
         default:
-            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                "flv-live: send_header| av header config error.");
 
-            return NGX_HTTP_INTERNAL_SERVER_ERROR;
+            if (has_audio && has_video) {
+                b->start = b->pos = ngx_flv_live_av_header;
+                b->end = b->last = ngx_flv_live_av_header +
+                    sizeof(ngx_flv_live_av_header) - 1;
+                ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
+                        "broth video and audio, url: %V", &r->uri);
+            } else if (!has_video && has_audio) {
+                b->start = b->pos = ngx_flv_live_audio_header;
+                b->end = b->last = ngx_flv_live_audio_header +
+                    sizeof(ngx_flv_live_audio_header) - 1;
+                ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
+                        "only audio, url: %V", &r->uri);
+            } else if (has_video && !has_audio) {
+                b->start = b->pos = ngx_flv_live_video_header;
+                b->end = b->last = ngx_flv_live_video_header +
+                    sizeof(ngx_flv_live_video_header) - 1;
+                ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
+                        "only video, url: %V", &r->uri);
+            } else {
+                ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                        "miss video and audio headers, url: %V", &r->uri);
+                return NGX_HTTP_INTERNAL_SERVER_ERROR;
+            }
+            // ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+            //     "flv-live: send_header| av header config error.");
+
+//            return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
     b->memory = 1;
@@ -546,6 +583,16 @@ ngx_http_flv_live_handler(ngx_http_request_t *r)
     ngx_rtmp_core_app_conf_t          **cacfp;
     ngx_http_cleanup_t                 *cln;
     ngx_rtmp_core_main_conf_t          *cmcf;
+    ngx_keyval_t                       *h;
+
+    h = ngx_http_flv_live_headers;
+    while (h->key.len) {
+        rc = ngx_http_set_header_out(r, &h->key, &h->value);
+        if (rc != NGX_OK) {
+            return rc;
+        }
+        ++h;
+    }
 
     rc = ngx_http_discard_request_body(r);
 
