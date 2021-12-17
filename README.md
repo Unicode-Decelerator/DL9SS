@@ -21,9 +21,9 @@
 - 直接安装到系统
     ```bash
     # 快速安装
-    git clone https://github.com/Unicode-Decelerator/DL9SS.git
+    git clone https://github.com/Uniseca/LiveStreamSolution.git
 
-    cd DL9SS
+    cd LiveStreamSolution
 
     ./release.sh -i
 
